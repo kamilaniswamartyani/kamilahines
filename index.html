@@ -1,0 +1,1786 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Petualangan Sahabat Al-Balad - Game Edukasi Qur'an Hadis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        canvas {
+            image-rendering: pixelated;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+        }
+        /* Animasi Kustom */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        /* Custom scrollbar untuk modal info */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-2 md:p-6 text-white overflow-x-hidden">
+
+    <header class="w-full max-w-5xl flex flex-col md:flex-row items-center justify-between gap-4 mb-4 z-10">
+        <div class="flex items-center gap-3">
+            <div class="bg-emerald-600 p-2.5 rounded-xl shadow-lg border border-emerald-400/20">
+                <i class="fa-solid fa-book-quran text-2xl text-yellow-300"></i>
+            </div>
+            <div>
+                <h1 class="text-xl md:text-2xl font-extrabold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
+                    Sahabat Al-Balad
+                </h1>
+                <p class="text-xs text-slate-400">Petualangan Edukatif Qur'an Hadis - Kelas VII MTs</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <button id="btn-audio-toggle" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-sm border border-slate-700 flex items-center gap-2 transition">
+                <i class="fa-solid fa-volume-high" id="audio-icon"></i>
+                <span class="hidden sm:inline">Suara: Aktif</span>
+            </button>
+            <button id="btn-panduan" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-sm border border-slate-700 flex items-center gap-2 transition">
+                <i class="fa-solid fa-circle-question text-emerald-400"></i>
+                <span>Panduan</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="w-full max-w-5xl flex flex-col lg:flex-row gap-6 items-stretch justify-center flex-grow">
+        <!-- Game Screen (Kiri) -->
+        <div class="flex-grow flex flex-col items-center justify-center bg-slate-900/50 backdrop-blur-md rounded-2xl p-4 border border-slate-800 relative shadow-2xl">
+            <!-- HUD Atas Canvas -->
+            <div id="hud-bar" class="w-full flex items-center justify-between mb-3 text-sm font-semibold bg-slate-950/80 px-4 py-2.5 rounded-xl border border-slate-800">
+                <div class="flex items-center gap-4">
+                    <span class="flex items-center gap-1.5 text-yellow-400">
+                        <i class="fa-solid fa-star"></i> Skor: <span id="hud-score">0</span>
+                    </span>
+                    <span class="flex items-center gap-1.5 text-red-400">
+                        <i class="fa-solid fa-heart"></i> Nyawa: <span id="hud-lives">⭐⭐⭐</span>
+                    </span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="bg-emerald-950 text-emerald-300 px-2.5 py-0.5 rounded-md border border-emerald-800/50 text-xs">
+                        Level: <span id="hud-level">1/3</span>
+                    </span>
+                    <span class="text-slate-400 text-xs hidden sm:inline" id="hud-level-name">
+                        Negeri yang Aman
+                    </span>
+                </div>
+            </div>
+
+            <!-- Canvas Utama -->
+            <div class="relative w-full overflow-hidden rounded-xl border-2 border-slate-700/50 bg-slate-950 flex items-center justify-center">
+                <canvas id="gameCanvas" width="800" height="450" class="max-w-full h-auto block"></canvas>
+                
+                <!-- Layar Start Screen Overlay -->
+                <div id="start-screen" class="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center p-6 text-center z-20">
+                    <div class="animate-float mb-4 bg-emerald-600/10 p-6 rounded-full border border-emerald-500/20 shadow-inner">
+                        <i class="fa-solid fa-mosque text-6xl text-emerald-400"></i>
+                    </div>
+                    <h2 class="text-3xl font-extrabold text-white mb-2">Petualangan Sahabat Al-Balad</h2>
+                    <p class="text-sm text-slate-400 max-w-md mb-6">
+                        Bantulah Ahmad menjelajahi rintangan, mengumpulkan koin ilmu, dan menjawab kuis tentang Surah Al-Balad untuk membuka Gerbang Ilmu!
+                    </p>
+                    <button id="btn-start-game" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold px-8 py-3 rounded-xl shadow-lg shadow-emerald-900/30 text-lg flex items-center gap-3 transition transform hover:scale-105 active:scale-95">
+                        <i class="fa-solid fa-play"></i> Mulai Petualangan
+                    </button>
+                    <p class="text-xs text-slate-500 mt-4">Gunakan tombol Keyboard (Arah/Space) atau Tombol Sentuh di HP.</p>
+                </div>
+
+                <!-- Layar Game Over Overlay -->
+                <div id="gameover-screen" class="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center p-6 text-center z-20 hidden">
+                    <div class="mb-4 bg-red-600/10 p-5 rounded-full border border-red-500/20">
+                        <i class="fa-solid fa-heart-crack text-5xl text-red-500"></i>
+                    </div>
+                    <h2 class="text-2xl font-extrabold text-red-500 mb-2">Kesempatan Belajar Lagi!</h2>
+                    <p class="text-sm text-slate-400 max-w-md mb-6">
+                        Jangan berkecil hati! Menuntut ilmu adalah perjuangan yang mendaki. Mari kita coba lagi dan perkuat pemahaman kita!
+                    </p>
+                    <button id="btn-restart-game" class="bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-2.5 rounded-xl text-md flex items-center gap-2 transition transform hover:scale-105">
+                        <i class="fa-solid fa-rotate-left"></i> Main Lagi
+                    </button>
+                </div>
+            </div>
+
+            <div id="mobile-controls" class="w-full grid grid-cols-2 gap-4 mt-3 sm:hidden select-none">
+                <div class="flex gap-2">
+                    <button id="btn-ctrl-left" class="flex-1 bg-slate-800 active:bg-slate-700 border border-slate-700 text-xl py-3 rounded-xl flex items-center justify-center active:scale-95 transition-all">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <button id="btn-ctrl-right" class="flex-1 bg-slate-800 active:bg-slate-700 border border-slate-700 text-xl py-3 rounded-xl flex items-center justify-center active:scale-95 transition-all">
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+                <div class="flex">
+                    <button id="btn-ctrl-jump" class="w-full bg-emerald-600 active:bg-emerald-500 border border-emerald-500 text-xl py-3 rounded-xl flex items-center justify-center active:scale-95 transition-all">
+                        LOMPAT <i class="fa-solid fa-angles-up ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Panel Materi & Statistik (Kanan) -->
+        <aside class="w-full lg:w-80 flex flex-col gap-4">
+            <!-- Kartu Edukasi (Rangkuman Surah) -->
+            <div class="bg-slate-900/50 backdrop-blur-md p-4 rounded-2xl border border-slate-800 flex flex-col justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-book-open text-emerald-400"></i> Ensiklopedia Al-Balad
+                    </h3>
+                    <div class="space-y-2 text-xs text-slate-300">
+                        <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-850">
+                            <span class="font-semibold text-emerald-400">Nama Surah:</span>
+                            <p>Al-Balad (Artinya: "Negeri" / Kota Mekah)</p>
+                        </div>
+                        <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-850">
+                            <span class="font-semibold text-emerald-400">Golongan:</span>
+                            <p>Makkiyah (Turun di Mekah sebelum hijrah)</p>
+                        </div>
+                        <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-850">
+                            <span class="font-semibold text-emerald-400">Jumlah Ayat:</span>
+                            <p>20 Ayat (Urutan ke-90 dalam Al-Qur'an)</p>
+                        </div>
+                        <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-850">
+                            <span class="font-semibold text-emerald-400">Intisari Utama:</span>
+                            <p class="leading-relaxed">Manusia diciptakan untuk berjuang menghadapi kesulitan, lalu Allah menunjukkan dua jalan (kebajikan & kejahatan). Jalan kebajikan disebut "Al-Aqabah" (jalan mendaki lagi sukar) seperti menolong fakir miskin & anak yatim.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Papan Penghargaan & Progres -->
+            <div class="bg-slate-900/50 backdrop-blur-md p-4 rounded-2xl border border-slate-800 flex-grow flex flex-col justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-trophy text-yellow-400"></i> Penghargaan Siswa
+                    </h3>
+                    <div class="space-y-3">
+                        <!-- Misi 1 -->
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-950 border border-emerald-800/40 flex items-center justify-center" id="badge-lvl1">
+                                <i class="fa-solid fa-hourglass text-xs text-slate-500"></i>
+                            </div>
+                            <div class="text-xs">
+                                <p class="font-bold text-slate-200" id="badge-title-lvl1">Pelajar Siaga</p>
+                                <p class="text-slate-400 text-[10px]" id="badge-desc-lvl1">Selesaikan Level 1</p>
+                            </div>
+                        </div>
+                        <!-- Misi 2 -->
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-950 border border-emerald-800/40 flex items-center justify-center" id="badge-lvl2">
+                                <i class="fa-solid fa-hourglass text-xs text-slate-500"></i>
+                            </div>
+                            <div class="text-xs">
+                                <p class="font-bold text-slate-200" id="badge-title-lvl2">Pejuang Al-Aqabah</p>
+                                <p class="text-slate-400 text-[10px]" id="badge-desc-lvl2">Selesaikan Level 2</p>
+                            </div>
+                        </div>
+                        <!-- Misi 3 -->
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-950 border border-emerald-800/40 flex items-center justify-center" id="badge-master">
+                                <i class="fa-solid fa-hourglass text-xs text-slate-500"></i>
+                            </div>
+                            <div class="text-xs">
+                                <p class="font-bold text-slate-200" id="badge-title-master">Sahabat Al-Balad</p>
+                                <p class="text-slate-400 text-[10px]" id="badge-desc-master">Taklukkan Gerbang Ilmu!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-800/60 text-center text-[10px] text-slate-400">
+                    Sistem Penilaian: Koin = +10, Kuis Benar = +100, Sisa Nyawa = +150
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Modal Quiz Overlay -->
+    <div id="quiz-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-40 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl transform scale-95 opacity-0 transition-all duration-300" id="quiz-modal-card">
+            <!-- Header Kuis -->
+            <div class="bg-gradient-to-r from-emerald-800 to-emerald-950 px-6 py-4 flex items-center gap-3 border-b border-emerald-800">
+                <i class="fa-solid fa-circle-question text-xl text-yellow-300 animate-pulse"></i>
+                <div>
+                    <h3 class="font-bold text-white text-md">Ujian Checkpoint Ilmu</h3>
+                    <p class="text-xs text-emerald-300">Jawab dengan benar untuk melanjutkan perjalanan!</p>
+                </div>
+            </div>
+            
+            <!-- Konten Kuis -->
+            <div class="p-6">
+                <p id="quiz-question" class="text-slate-100 font-semibold text-md mb-4 leading-relaxed">
+                    Pertanyaan akan muncul di sini?
+                </p>
+                
+                <!-- Pilihan Jawaban -->
+                <div class="space-y-2.5" id="quiz-options">
+                    <!-- Tombol pilihan digenerate via JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Penjelasan Edukatif (Feedback Salah) -->
+    <div id="feedback-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-900 border border-red-900/40 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl p-6">
+            <div class="flex items-center gap-3 text-red-400 mb-3">
+                <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                <h4 class="font-bold text-lg">Kurang Tepat, Yuk Belajar!</h4>
+            </div>
+            <div class="bg-slate-950/50 p-4 rounded-xl border border-slate-800 text-sm leading-relaxed mb-5" id="feedback-text">
+                Penjelasan edukatif akan muncul di sini untuk membantu siswa memahami materi.
+            </div>
+            <button id="btn-close-feedback" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-xl text-sm transition">
+                Paham, Lanjutkan Petualangan!
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Panduan Cara Bermain -->
+    <div id="panduan-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl">
+            <div class="px-6 py-4 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+                <h3 class="font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-emerald-400"></i> Panduan Bermain
+                </h3>
+                <button id="btn-close-panduan" class="text-slate-400 hover:text-white text-lg">&times;</button>
+            </div>
+            <div class="p-6 space-y-4 text-sm text-slate-300">
+                <div>
+                    <h4 class="font-bold text-emerald-400 mb-1">🎮 Cara Mengontrol</h4>
+                    <p class="mb-2"><strong>Keyboard:</strong> Gunakan tombol <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs">Panah Kiri</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs">Panah Kanan</kbd> (A/D) untuk berjalan, dan <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs">Spasi</kbd> / <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs">Panah Atas</kbd> (W) untuk melompat.</p>
+                    <p><strong>Mobile/HP:</strong> Gunakan tombol arah dan lompat virtual yang tampil di layar bawah.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-emerald-400 mb-1">🎯 Tugas Utama</h4>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>Kumpulkan <strong>Koin Ilmu</strong> (+10 poin) sepanjang jalan.</li>
+                        <li>Hindari <strong>Rintangan Sifat Buruk</strong> (musuh merah) agar nyawa tidak berkurang.</li>
+                        <li>Selesaikan kuis di <strong>Papan Checkpoint</strong> (buku terbuka) untuk bonus nyawa dan poin (+100).</li>
+                        <li>Di Level 3 akhir, lewati <strong>Gerbang Ilmu</strong> dengan menjawab 5 kuis berturut-turut untuk meraih gelar utama!</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Victory (Certificate) -->
+    <div id="victory-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-gradient-to-b from-slate-900 to-emerald-950 border-2 border-emerald-500/30 rounded-3xl max-w-xl w-full p-6 md:p-8 shadow-2xl text-center relative overflow-hidden">
+            <!-- Dekorasi kubah masjid mini di latar sertifikat -->
+            <div class="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-48 bg-emerald-500/5 rounded-full blur-2xl"></div>
+            
+            <div class="animate-bounce inline-block mb-3 bg-yellow-500/20 p-4 rounded-full border border-yellow-400/20">
+                <i class="fa-solid fa-trophy text-5xl text-yellow-400"></i>
+            </div>
+            
+            <h2 class="text-2xl md:text-3xl font-black text-yellow-300 uppercase tracking-wide mb-1">
+                Sahabat Al-Balad
+            </h2>
+            <p class="text-sm text-emerald-300 font-semibold mb-6">Pahlawan Kebajikan Qur'an Hadis</p>
+
+            <!-- Bingkai Sertifikat -->
+            <div class="bg-slate-950/60 border border-emerald-800/60 rounded-2xl p-5 md:p-6 mb-6 text-left relative">
+                <div class="absolute top-2 right-2 text-emerald-500/20 text-7xl"><i class="fa-solid fa-award"></i></div>
+                <p class="text-xs text-slate-400 uppercase tracking-widest text-center mb-4">Sertifikat Kelulusan Game</p>
+                
+                <p class="text-sm md:text-base leading-relaxed text-slate-200 text-center italic font-semibold mb-4">
+                    "Kamu telah berhasil menyelesaikan seluruh tantangan petualangan dan memahami pesan mulia dari Surah Al-Balad."
+                </p>
+
+                <div class="grid grid-cols-3 gap-2 border-t border-slate-800 pt-4 text-center">
+                    <div>
+                        <p class="text-[10px] text-slate-400 uppercase">Skor Akhir</p>
+                        <p class="text-lg md:text-xl font-bold text-yellow-400" id="final-score">0</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-slate-400 uppercase">Koin Terkumpul</p>
+                        <p class="text-lg md:text-xl font-bold text-emerald-400" id="final-coins">0</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-slate-400 uppercase">Status Kelulusan</p>
+                        <p class="text-xs md:text-sm font-bold text-teal-400 mt-1">Sangat Baik ⭐</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pesan Motivasi Qur'ani -->
+            <div class="bg-emerald-950/50 p-4 rounded-xl border border-emerald-800/40 text-xs md:text-sm text-emerald-200 mb-6 leading-relaxed">
+                <p class="font-bold mb-1">💡 Pesan Motivasi:</p>
+                "Maka hadapilah tantangan hidupmu dengan kesabaran dan saling berkasih sayang kepada sesama (QS. Al-Balad: 17). Tetap semangat belajar dan jadilah pahlawan kebaikan di dunia nyata!"
+            </div>
+
+            <!-- Tombol Aksi -->
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button id="btn-share-cert" class="flex-1 bg-teal-600 hover:bg-teal-500 text-white font-bold py-3 rounded-xl text-sm transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-copy"></i> Salin Link Sertifikat
+                </button>
+                <button id="btn-play-again" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3 rounded-xl text-sm transition">
+                    Main Lagi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full max-w-5xl text-center text-[10px] md:text-xs text-slate-500 py-4 mt-4 border-t border-slate-900/60">
+        &copy; 2026 Game Edukasi Madrasah Tsanawiyah. Materi Surah Al-Balad - Kelas 7 MTs.
+    </footer>
+
+    <script>
+        /* ==========================================
+           SOUND GENERATOR ENGINE (Web Audio API)
+           ========================================== */
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playJump() {
+                if (!this.enabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.15);
+
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.16);
+            }
+
+            playCoin() {
+                if (!this.enabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(987.77, this.ctx.currentTime); // B5
+                osc.frequency.setValueAtTime(1318.51, this.ctx.currentTime + 0.08); // E6
+
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.36);
+            }
+
+            playCorrect() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                // Harmoni Chord Mayor C ceria
+                const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                freqs.forEach((f, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(f, now + (i * 0.05));
+                    gain.gain.setValueAtTime(0.08, now + (i * 0.05));
+                    gain.gain.exponentialRampToValueAtTime(0.005, now + 0.4);
+                    osc.start(now + (i * 0.05));
+                    osc.stop(now + 0.4);
+                });
+            }
+
+            playWrong() {
+                if (!this.enabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, this.ctx.currentTime); // A3
+                osc.frequency.linearRampToValueAtTime(110, this.ctx.currentTime + 0.3);
+
+                gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.36);
+            }
+
+            playVictory() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50]; // C Mayor scale run
+                notes.forEach((f, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(f, now + (i * 0.1));
+                    gain.gain.setValueAtTime(0.1, now + (i * 0.1));
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + (i * 0.1) + 0.3);
+                    osc.start(now + (i * 0.1));
+                    osc.stop(now + (i * 0.1) + 0.35);
+                });
+            }
+        }
+
+        const sound = new SoundEngine();
+
+        /* ==========================================
+           STREAMING_CHUNK: Mendefinisikan Bank Soal Kuis Surah Al-Balad
+           ========================================== */
+        const QUIZ_BANK = [
+            // Level 1 Checkpoint
+            {
+                level: 1,
+                id: "q1",
+                question: "Apa arti dari nama Surah Al-Balad?",
+                options: [
+                    { text: "Negeri / Kota Mekah", correct: true },
+                    { text: "Kuda Perang", correct: false },
+                    { text: "Waktu Fajar", correct: false },
+                    { text: "Matahari", correct: false }
+                ],
+                explanation: "Surah Al-Balad berarti 'Negeri', yang merujuk khususnya pada kemuliaan kota suci Mekah tempat Nabi Muhammad SAW dilahirkan."
+            },
+            {
+                level: 1,
+                id: "q2",
+                question: "Surah Al-Balad diturunkan di kota Mekah sebelum Rasulullah SAW hijrah, sehingga termasuk ke dalam golongan surah...",
+                options: [
+                    { text: "Madaniyah", correct: false },
+                    { text: "Makkiyah", correct: true },
+                    { text: "Kufiyah", correct: false },
+                    { text: "Yamaniyah", correct: false }
+                ],
+                explanation: "Surah Al-Balad digolongkan sebagai surah Makkiyah karena diwahyukan di Mekah sebelum Rasulullah SAW berhijrah ke Madinah."
+            },
+            {
+                level: 1,
+                id: "q3",
+                question: "Berapakah jumlah ayat yang terdapat dalam Surah Al-Balad?",
+                options: [
+                    { text: "15 Ayat", correct: false },
+                    { text: "25 Ayat", correct: false },
+                    { text: "20 Ayat", correct: true },
+                    { text: "30 Ayat", correct: false }
+                ],
+                explanation: "Surah Al-Balad terdiri dari 20 ayat utuh dan merupakan surah ke-90 dalam sistematika urutan mushaf Al-Qur'an."
+            },
+            // Level 2 Checkpoint
+            {
+                level: 2,
+                id: "q4",
+                question: "Berdasarkan ayat ke-4, manusia diciptakan dalam keadaan 'Kabad', yang berarti...",
+                options: [
+                    { text: "Selalu senang dan tanpa beban", correct: false },
+                    { text: "Susah payah, berjuang, dan menghadapi tantangan hidup", correct: true },
+                    { text: "Sempurna tanpa perlu berusaha", correct: false },
+                    { text: "Lemah tak berdaya selamanya", correct: false }
+                ],
+                explanation: "'Kabad' berarti bersusah payah atau mengalami perjuangan. Allah menegaskan bahwa hidup manusia dipenuhi ujian dan perjuangan berat sejak lahir."
+            },
+            {
+                level: 2,
+                id: "q5",
+                question: "Apa yang dimaksud dengan istilah 'Al-Aqabah' (jalan yang mendaki lagi sukar) dalam Surah Al-Balad?",
+                options: [
+                    { text: "Mendaki gunung tertinggi di kota Mekah", correct: false },
+                    { text: "Perjalanan melelahkan saat berdagang ke negeri Syam", correct: false },
+                    { text: "Perjuangan menempuh jalan kebajikan dengan membantu sesama", correct: true },
+                    { text: "Berlari cepat antara bukit Shafa dan Marwah", correct: false }
+                ],
+                explanation: "'Al-Aqabah' adalah kiasan bagi jalan kebajikan yang berat bagi nafsu manusia, seperti mendonasikan harta, bersabar, dan menyayangi sesama."
+            },
+            // Level 3 (Final Gate / Gerbang Ilmu - 5 Soal)
+            {
+                level: 3,
+                id: "q6",
+                question: "Pilihan manakah di bawah ini yang sesuai dengan cara menempuh 'jalan yang mendaki' menurut ayat 12-16?",
+                options: [
+                    { text: "Membebaskan budak dan memberi makan orang yang kelaparan", correct: true },
+                    { text: "Membangun rumah mewah setinggi mungkin", correct: false },
+                    { text: "Menimbun harta demi menunjukkan kekayaan", correct: false },
+                    { text: "Membeli pakaian yang mahal-mahal", correct: false }
+                ],
+                explanation: "Ayat 13-16 menjelaskan cara menempuh jalan mendaki, di antaranya memerdekakan budak (fakkul-raqabah) dan memberi makanan bergizi pada hari kelaparan kepada anak yatim atau orang miskin."
+            },
+            {
+                level: 3,
+                id: "q7",
+                question: "Siapakah yang dimaksud dengan 'Ashabul Maimanah' (Golongan Kanan) di akhir Surah Al-Balad?",
+                options: [
+                    { text: "Orang-orang yang hanya memikirkan kepentingannya sendiri", correct: false },
+                    { text: "Orang beriman, saling berpesan tentang kesabaran dan kasih sayang", correct: true },
+                    { text: "Orang yang suka menulis menggunakan tangan kanan", correct: false },
+                    { text: "Orang yang tidak percaya hari kiamat", correct: false }
+                ],
+                explanation: "Ashabul Maimanah adalah golongan kanan yang selamat di akhirat, dicirikan dengan keimanan kuat serta kebiasaan saling berpesan dalam keteguhan (sabar) dan saling berkasih sayang."
+            },
+            {
+                level: 3,
+                id: "q8",
+                question: "Sikap sosial manakah yang sangat dididik oleh Surah Al-Balad untuk diterapkan dalam kehidupan sehari-hari?",
+                options: [
+                    { text: "Kepedulian sosial, gemar bersedekah, dan menolong sesama", correct: true },
+                    { text: "Individualisme, masa bodoh, dan egois", correct: false },
+                    { text: "Persaingan mencari harta sebanyak mungkin", correct: false },
+                    { text: "Membiarkan anak yatim berjuang sendiri", correct: false }
+                ],
+                explanation: "Surah Al-Balad mendidik kita untuk aktif peduli sosial, memecahkan masalah kelaparan di masyarakat, dan menyayangi anak yatim terdekat."
+            },
+            {
+                level: 3,
+                id: "q9",
+                question: "Sebaliknya, 'Ashabul Mas-amah' (Golongan Kiri) yang diancam dengan neraka yang ditutup rapat adalah...",
+                options: [
+                    { text: "Orang-orang miskin yang tidak berdaya", correct: false },
+                    { text: "Orang-orang yang mendurhakai dan mengingkari ayat-ayat Allah", correct: true },
+                    { text: "Orang yang kidal sejak lahir", correct: false },
+                    { text: "Orang-orang yang tersesat di perjalanan", correct: false }
+                ],
+                explanation: "Ashabul Mas-amah adalah golongan kiri (celaka) yang mendustakan tanda-tanda kebesaran Allah dan enggan menempuh jalan kebajikan sosial."
+            },
+            {
+                level: 3,
+                id: "q10",
+                question: "Mengapa di awal surah Allah bersumpah menggunakan nama 'Negeri ini' (Kota Mekah)?",
+                options: [
+                    { text: "Karena keindahan bangunan kotanya", correct: false },
+                    { text: "Karena kota Mekah adalah tempat tinggal Nabi Muhammad SAW yang suci dan mulia", correct: true },
+                    { text: "Karena Mekah merupakan pusat tambang emas terbesar kala itu", correct: false },
+                    { text: "Karena cuaca kota Mekah sangat sejuk", correct: false }
+                ],
+                explanation: "Allah bersumpah dengan kota Mekah untuk menegaskan kesucian dan keagungan kota tersebut, di mana Rasulullah SAW tinggal dan menyampaikan dakwah Islam."
+            }
+        ];
+
+        /* ==========================================
+           STREAMING_CHUNK: Menyiapkan Objek Canvas dan State Game
+           ========================================== */
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // State Global Game
+        let gameState = 'START'; // START, PLAYING, QUIZ, GAMEOVER, VICTORY
+        let currentLevel = 1;
+        let score = 0;
+        let coins = 0;
+        let lives = 3;
+        
+        // Konstanta Fisika Sederhana
+        const GRAVITY = 0.5;
+        const WALK_SPEED = 4;
+        const JUMP_FORCE = -10.5;
+
+        // Objek Kamera Parallax
+        let cameraX = 0;
+        const virtualWidth = 3000; // Lebar total per level
+
+        // Input Handler
+        const keys = {
+            left: false,
+            right: false,
+            up: false,
+            space: false
+        };
+
+        // Event Listener Keyboard
+        window.addEventListener('keydown', (e) => {
+            if (gameState !== 'PLAYING') return;
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.up = true;
+            if (e.key === ' ' || e.key === 'Spacebar') { keys.space = true; e.preventDefault(); }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.up = false;
+            if (e.key === ' ' || e.key === 'Spacebar') keys.space = false;
+        });
+
+        /* ==========================================
+           STREAMING_CHUNK: Membuat Logika Karakter Pemain (Player)
+           ========================================== */
+        class Player {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = 100;
+                this.y = 300;
+                this.width = 32;
+                this.height = 48;
+                this.vx = 0;
+                this.vy = 0;
+                this.isGrounded = false;
+                this.direction = 1; // 1 = Kanan, -1 = Kiri
+                this.animFrame = 0;
+                this.isMoving = false;
+                this.invincibleTimer = 0;
+            }
+
+            update() {
+                // Terapkan Gaya Gravitasi
+                this.vy += GRAVITY;
+
+                // Gerak Horisontal
+                this.isMoving = false;
+                if (keys.left) {
+                    this.vx = -WALK_SPEED;
+                    this.direction = -1;
+                    this.isMoving = true;
+                } else if (keys.right) {
+                    this.vx = WALK_SPEED;
+                    this.direction = 1;
+                    this.isMoving = true;
+                } else {
+                    this.vx = 0;
+                }
+
+                // Gerak Lompat
+                if ((keys.up || keys.space) && this.isGrounded) {
+                    this.vy = JUMP_FORCE;
+                    this.isGrounded = false;
+                    sound.playJump();
+                }
+
+                // Terapkan Kecepatan
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Batas Dunia Game
+                if (this.x < 0) this.x = 0;
+                if (this.x > virtualWidth - this.width) this.x = virtualWidth - this.width;
+
+                // Animasi Berjalan Sederhana
+                if (this.isMoving && this.isGrounded) {
+                    this.animFrame += 0.15;
+                } else {
+                    this.animFrame = 0;
+                }
+
+                // Pengurangan Timer Kebal
+                if (this.invincibleTimer > 0) {
+                    this.invincibleTimer--;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x - cameraX + this.width / 2, this.y + this.height / 2);
+                
+                // Efek kedip saat kebal
+                if (this.invincibleTimer > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
+                    ctx.restore();
+                    return;
+                }
+
+                if (this.direction === -1) {
+                    ctx.scale(-1, 1);
+                }
+
+                // GAMBAR VECTOR KARAKTER: Ahmad (Pelajar Muslim MTs menggunakan peci hitam)
+                
+                // 1. Kaki Berayun Saat Jalan
+                const legSwing = Math.sin(this.animFrame) * 8;
+                ctx.fillStyle = '#1e3a8a'; // Celana Panjang Biru
+                ctx.fillRect(-8, 12, 6, 12 + (this.isMoving ? legSwing : 0));
+                ctx.fillRect(2, 12, 6, 12 - (this.isMoving ? legSwing : 0));
+                // Sepatu Hitam
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(-9, 21 + (this.isMoving ? legSwing : 0), 7, 3);
+                ctx.fillRect(1, 21 - (this.isMoving ? legSwing : 0), 7, 3);
+
+                // 2. Tubuh (Kemeja Putih Seragam & Rompi Hijau)
+                ctx.fillStyle = '#ffffff'; // Kemeja Putih
+                ctx.fillRect(-12, -12, 24, 24);
+                ctx.fillStyle = '#059669'; // Rompi Hijau Khas MTs
+                ctx.fillRect(-12, -12, 5, 24);
+                ctx.fillRect(7, -12, 5, 24);
+                ctx.fillRect(-12, 6, 24, 6);
+
+                // Tas Ransel Hijau Tua
+                ctx.fillStyle = '#065f46';
+                ctx.fillRect(-16, -10, 5, 18);
+
+                // 3. Kepala & Wajah
+                ctx.fillStyle = '#fed7aa'; // Kulit Peach
+                ctx.beginPath();
+                ctx.arc(0, -20, 10, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Mata
+                ctx.fillStyle = '#0f172a';
+                ctx.beginPath();
+                ctx.arc(4, -21, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Senyuman
+                ctx.strokeStyle = '#e11d48';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(4, -18, 3, 0, Math.PI, false);
+                ctx.stroke();
+
+                // Peci Hitam Islami
+                ctx.fillStyle = '#1e293b'; // Hitam Pekat
+                ctx.fillRect(-8, -32, 16, 6);
+                ctx.beginPath();
+                ctx.arc(0, -28, 8, Math.PI, 0, false);
+                ctx.fill();
+
+                // Tangan
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(-14, -8, 4, 12); // Tangan Kiri
+                ctx.fillStyle = '#fed7aa';
+                ctx.fillRect(-14, 4, 4, 3);
+
+                ctx.restore();
+            }
+        }
+
+        const player = new Player();
+
+        /* ==========================================
+           STREAMING_CHUNK: Mendefinisikan Elemen Rintangan dan Aset Game
+           ========================================== */
+        class Coin {
+            constructor(x, y, isAlBaladWord = false, text = "") {
+                this.x = x;
+                this.y = y;
+                this.width = 24;
+                this.height = 24;
+                this.baseY = y;
+                this.isWord = isAlBaladWord;
+                this.text = text;
+                this.bobOffset = Math.random() * Math.PI * 2;
+                this.collected = false;
+            }
+
+            update() {
+                // Bobbing effect (mengapung lembut)
+                this.y = this.baseY + Math.sin(Date.now() / 150 + this.bobOffset) * 6;
+            }
+
+            draw() {
+                if (this.collected) return;
+                ctx.save();
+                ctx.translate(this.x - cameraX + this.width / 2, this.y + this.height / 2);
+
+                if (this.isWord) {
+                    // Papan Potongan Ayat / Huruf Arab Hijau
+                    ctx.fillStyle = '#065f46';
+                    ctx.strokeStyle = '#10b981';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.roundRect(-24, -15, 48, 30, 8);
+                    ctx.fill();
+                    ctx.stroke();
+                    // Tulisan Arab/Latin di dalamnya
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 12px Inter';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(this.text, 0, 0);
+                } else {
+                    // Koin Ilmu Emas
+                    ctx.fillStyle = '#f59e0b'; // Emas luar
+                    ctx.strokeStyle = '#fbbf24'; // Emas cerah
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 11, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Lambang Al-Qur'an / Buku di dalam koin
+                    ctx.fillStyle = '#78350f';
+                    ctx.beginPath();
+                    ctx.moveTo(-5, -3);
+                    ctx.lineTo(0, -1);
+                    ctx.lineTo(5, -3);
+                    ctx.lineTo(5, 4);
+                    ctx.lineTo(0, 6);
+                    ctx.lineTo(-5, 4);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        class Enemy {
+            constructor(x, y, range = 120, label = "MALAS") {
+                this.startX = x;
+                this.x = x;
+                this.y = y;
+                this.width = 30;
+                this.height = 30;
+                this.range = range;
+                this.vx = 1.2;
+                this.label = label;
+                this.animOffset = Math.random() * 100;
+            }
+
+            update() {
+                this.x += this.vx;
+                // Patroli bolak-balik
+                if (this.x > this.startX + this.range || this.x < this.startX) {
+                    this.vx *= -1;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x - cameraX + this.width / 2, this.y + this.height / 2);
+
+                // Bentuk fisik musuh: Karakter Monster Sifat Buruk (Merah menyeramkan)
+                ctx.fillStyle = '#e11d48'; // Merah menyala
+                ctx.strokeStyle = '#9f1239';
+                ctx.lineWidth = 3;
+                
+                // Tubuh Blob berdenyut
+                const pulse = Math.sin(Date.now() / 100 + this.animOffset) * 2;
+                ctx.beginPath();
+                ctx.arc(0, pulse, 15, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Tanduk Setan kecil
+                ctx.fillStyle = '#9f1239';
+                ctx.beginPath();
+                ctx.moveTo(-10, -12 + pulse);
+                ctx.lineTo(-14, -20 + pulse);
+                ctx.lineTo(-4, -14 + pulse);
+                ctx.moveTo(10, -12 + pulse);
+                ctx.lineTo(14, -20 + pulse);
+                ctx.lineTo(4, -14 + pulse);
+                ctx.fill();
+
+                // Mata marah
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(-5, -2 + pulse, 3, 0, Math.PI * 2);
+                ctx.arc(5, -2 + pulse, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(-4, -1 + pulse, 1, 0, Math.PI * 2);
+                ctx.arc(4, -1 + pulse, 1, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Label Sifat Buruk di atas kepala
+                ctx.fillStyle = '#fda4af';
+                ctx.font = 'bold 8px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.label, 0, -22 + pulse);
+
+                ctx.restore();
+            }
+        }
+
+        // Rintangan Spikes (Duri Kayu)
+        class Spike {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 40;
+                this.height = 20;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.fillStyle = '#78350f'; // Warna kayu
+                ctx.strokeStyle = '#451a03';
+                ctx.lineWidth = 2;
+                
+                // Menggambar 3 deret duri segitiga tajam
+                for (let i = 0; i < 3; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(this.x - cameraX + (i * 13.3), this.y + this.height);
+                    ctx.lineTo(this.x - cameraX + (i * 13.3) + 6.6, this.y);
+                    ctx.lineTo(this.x - cameraX + (i * 13.3) + 13.3, this.y + this.height);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
+
+        // Checkpoint Buku Al-Qur'an (Rehal)
+        class Checkpoint {
+            constructor(x, y, quizId) {
+                this.x = x;
+                this.y = y;
+                this.width = 40;
+                this.height = 40;
+                this.quizId = quizId;
+                this.activated = false;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x - cameraX + this.width / 2, this.y + this.height / 2);
+
+                const bob = Math.sin(Date.now() / 200) * 4;
+
+                // Pancaran aura hijau jika aktif / belum aktif
+                const glowColor = this.activated ? 'rgba(52, 211, 153, 0.4)' : 'rgba(251, 191, 36, 0.5)';
+                const radialGradient = ctx.createRadialGradient(0, bob, 2, 0, bob, 25);
+                radialGradient.addColorStop(0, glowColor);
+                radialGradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = radialGradient;
+                ctx.beginPath();
+                ctx.arc(0, bob, 25, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Rehal Kayu (Stand Qur'an)
+                ctx.fillStyle = '#b45309'; // Kayu
+                ctx.beginPath();
+                ctx.moveTo(-16, 16);
+                ctx.lineTo(16, -4);
+                ctx.lineTo(12, -8);
+                ctx.lineTo(-12, 12);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = '#78350f'; // Silang kayu sebaliknya
+                ctx.beginPath();
+                ctx.moveTo(16, 16);
+                ctx.lineTo(-16, -4);
+                ctx.lineTo(-12, -8);
+                ctx.lineTo(12, 12);
+                ctx.closePath();
+                ctx.fill();
+
+                // Buku Al-Qur'an Terbuka di atasnya
+                ctx.fillStyle = '#10b981'; // Sampul Hijau
+                ctx.fillRect(-14, -14 + bob, 28, 12);
+                
+                ctx.fillStyle = '#ffffff'; // Kertas Putih Terbuka
+                ctx.fillRect(-12, -13 + bob, 11, 10);
+                ctx.fillRect(1, -13 + bob, 11, 10);
+
+                // Garis emas penanda kitab suci
+                ctx.strokeStyle = '#fbbf24';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(-14, -14 + bob, 28, 12);
+
+                ctx.restore();
+            }
+        }
+
+        // Pintu Gerbang Akhir Level / Gerbang Ilmu
+        class GoalGate {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 80;
+                this.height = 120;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x - cameraX, this.y);
+
+                // Gambar gerbang berkubah mewah
+                // Pilar kiri-kanan
+                ctx.fillStyle = '#1e293b';
+                ctx.strokeStyle = '#059669';
+                ctx.lineWidth = 3;
+                
+                ctx.fillRect(0, 20, 15, 100);
+                ctx.strokeRect(0, 20, 15, 100);
+                ctx.fillRect(65, 20, 15, 100);
+                ctx.strokeRect(65, 20, 15, 100);
+
+                // Kubah Gerbang Atas
+                ctx.fillStyle = '#047857';
+                ctx.beginPath();
+                ctx.moveTo(0, 20);
+                ctx.quadraticCurveTo(40, -15, 80, 20);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Portal Cahaya di dalam pintu
+                const glow = Math.abs(Math.sin(Date.now() / 300)) * 0.4 + 0.3;
+                ctx.fillStyle = `rgba(16, 185, 129, ${glow})`;
+                ctx.fillRect(15, 20, 50, 100);
+
+                // Teks "GERBANG ILMU"
+                ctx.fillStyle = '#fbbf24';
+                ctx.font = 'bold 9px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText("GERBANG", 40, 45);
+                ctx.fillText("ILMU", 40, 58);
+
+                ctx.restore();
+            }
+        }
+
+        /* ==========================================
+           STREAMING_CHUNK: Merancang Layout Platform Dunia Game (Level & Rintangan)
+           ========================================== */
+        // Blok Tanah Dasar & Melayang
+        class Platform {
+            constructor(x, y, w, h, isCloud = false) {
+                this.x = x;
+                this.y = y;
+                this.width = w;
+                this.height = h;
+                this.isCloud = isCloud;
+            }
+
+            draw() {
+                ctx.save();
+                if (this.isCloud) {
+                    // Gambar awan melayang semi-transparan
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+                    ctx.beginPath();
+                    ctx.roundRect(this.x - cameraX, this.y, this.width, this.height, 10);
+                    ctx.fill();
+                    // Aksen gumpalan awan melingkar
+                    ctx.beginPath();
+                    ctx.arc(this.x - cameraX + this.width/3, this.y, 14, 0, Math.PI * 2);
+                    ctx.arc(this.x - cameraX + (this.width*2)/3, this.y - 4, 18, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // Blok Tanah Berwarna Sesuai Level
+                    let colorTop = '#10b981'; // Hijau untuk Level 1
+                    let colorDirt = '#78350f';
+                    
+                    if (currentLevel === 2) {
+                        colorTop = '#d97706'; // Emas Gurun/Bukit
+                        colorDirt = '#92400e';
+                    } else if (currentLevel === 3) {
+                        colorTop = '#0284c7'; // Biru Masjid/Perkotaan
+                        colorDirt = '#1e293b';
+                    }
+
+                    // Sisi Atas Rumput/Gurun
+                    ctx.fillStyle = colorTop;
+                    ctx.fillRect(this.x - cameraX, this.y, this.width, 12);
+                    
+                    // Sisi Bawah Tanah
+                    ctx.fillStyle = colorDirt;
+                    ctx.fillRect(this.x - cameraX, this.y + 12, this.width, this.height - 12);
+
+                    // Garis pembatas agar visual lebih tegas
+                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(this.x - cameraX, this.y, this.width, this.height);
+                }
+                ctx.restore();
+            }
+        }
+
+        // Variabel Penyimpan Dunia Aktif
+        let platforms = [];
+        let coinsList = [];
+        let enemies = [];
+        let spikes = [];
+        let checkpoints = [];
+        let activeCheckpoint = null;
+        let finalGoal = null;
+
+        /* ==========================================
+           STREAMING_CHUNK: Menyusun Blueprint Struktur Level 1, 2, dan 3
+           ========================================== */
+        function loadLevel(lvl) {
+            currentLevel = lvl;
+            player.reset();
+            cameraX = 0;
+            
+            platforms = [];
+            coinsList = [];
+            enemies = [];
+            spikes = [];
+            checkpoints = [];
+
+            // Memperbarui UI Informasi Sampingan
+            document.getElementById('hud-level').innerText = `${lvl}/3`;
+            const levelNames = ["Negeri yang Aman", "Jalan yang Mendaki (Al-Aqabah)", "Gerbang Kebajikan & Kasih Sayang"];
+            document.getElementById('hud-level-name').innerText = levelNames[lvl - 1];
+
+            // 1. BUAT PLATFORM DASAR (Ground) sepanjang 3000px
+            platforms.push(new Platform(0, 400, 600, 50));
+            platforms.push(new Platform(700, 400, 500, 50));
+            platforms.push(new Platform(1300, 400, 600, 50));
+            platforms.push(new Platform(2000, 400, 1000, 50));
+
+            if (lvl === 1) {
+                // LEVEL 1: Pengenalan Identitas Al-Balad (Mudah)
+                // Platform Melayang
+                platforms.push(new Platform(250, 280, 120, 20));
+                platforms.push(new Platform(450, 220, 100, 20));
+                platforms.push(new Platform(850, 290, 150, 20));
+                platforms.push(new Platform(1100, 230, 120, 20));
+                platforms.push(new Platform(1500, 280, 200, 20));
+                platforms.push(new Platform(1800, 200, 120, 20));
+                platforms.push(new Platform(2200, 290, 200, 20));
+
+                // Koin Biasa
+                coinsList.push(new Coin(300, 240));
+                coinsList.push(new Coin(500, 180));
+                coinsList.push(new Coin(900, 250));
+                coinsList.push(new Coin(1150, 190));
+                coinsList.push(new Coin(1600, 240));
+                coinsList.push(new Coin(2300, 250));
+
+                // Huruf Khusus (Edukasi Surah Al-Balad)
+                coinsList.push(new Coin(150, 350, true, "MEKAH"));
+                coinsList.push(new Coin(1000, 350, true, "AL-BALAD"));
+                coinsList.push(new Coin(2500, 350, true, "20 AYAT"));
+
+                // Musuh Sederhana (Sifat Buruk: Sombong, Malas)
+                enemies.push(new Enemy(800, 370, 200, "SOMBOUNG"));
+                enemies.push(new Enemy(1400, 370, 150, "MALAS"));
+                enemies.push(new Enemy(2100, 370, 250, "EGOIS"));
+
+                // Duri
+                spikes.push(new Spike(1050, 380));
+                spikes.push(new Spike(1750, 380));
+
+                // Checkpoint Kuis
+                checkpoints.push(new Checkpoint(500, 360, "q1"));
+                checkpoints.push(new Checkpoint(1600, 360, "q2"));
+                checkpoints.push(new Checkpoint(2400, 360, "q3"));
+
+            } else if (lvl === 2) {
+                // LEVEL 2: Makna Jalan Mendaki / Perjuangan Hidup (Sedang)
+                // Platform lebih sempit dan berjauhan
+                platforms.push(new Platform(200, 270, 80, 20));
+                platforms.push(new Platform(350, 190, 80, 20));
+                platforms.push(new Platform(500, 260, 120, 20));
+                
+                // Celah besar dengan platform melayang awan
+                platforms.push(new Platform(1200, 250, 150, 15, true));
+                platforms.push(new Platform(1500, 200, 150, 15, true));
+                platforms.push(new Platform(1800, 260, 150, 15, true));
+
+                // Koin Ilmu
+                coinsList.push(new Coin(240, 230));
+                coinsList.push(new Coin(390, 150));
+                coinsList.push(new Coin(550, 220));
+                coinsList.push(new Coin(1270, 200));
+                coinsList.push(new Coin(1570, 150));
+                coinsList.push(new Coin(1870, 210));
+
+                // Huruf Khusus (Konsep Al-Aqabah)
+                coinsList.push(new Coin(150, 350, true, "PERJUANGAN"));
+                coinsList.push(new Coin(1400, 150, true, "AL-AQABAH"));
+                coinsList.push(new Coin(2600, 350, true, "SABAR"));
+
+                // Musuh
+                enemies.push(new Enemy(750, 370, 200, "KIKIR"));
+                enemies.push(new Enemy(1450, 370, 220, "PEMARAH"));
+                enemies.push(new Enemy(2200, 370, 300, "RIYA'"));
+
+                // Duri Lebih Banyak
+                spikes.push(new Spike(400, 380));
+                spikes.push(new Spike(1000, 380));
+                spikes.push(new Spike(1600, 380));
+                spikes.push(new Spike(2450, 380));
+
+                // Checkpoint
+                checkpoints.push(new Checkpoint(550, 220, "q4"));
+                checkpoints.push(new Checkpoint(1850, 220, "q5"));
+
+            } else if (lvl === 3) {
+                // LEVEL 3: Implementasi Kebaikan (Menantang)
+                platforms.push(new Platform(250, 290, 100, 20));
+                platforms.push(new Platform(450, 210, 100, 20));
+                platforms.push(new Platform(800, 270, 180, 20));
+                platforms.push(new Platform(1100, 190, 120, 20));
+                platforms.push(new Platform(1450, 250, 200, 20));
+                platforms.push(new Platform(1800, 210, 150, 20));
+                platforms.push(new Platform(2150, 280, 150, 20));
+
+                // Banyak Koin tersebar
+                coinsList.push(new Coin(300, 250));
+                coinsList.push(new Coin(500, 170));
+                coinsList.push(new Coin(850, 230));
+                coinsList.push(new Coin(1150, 150));
+                coinsList.push(new Coin(1550, 200));
+                coinsList.push(new Coin(1850, 170));
+
+                // Huruf Khusus (Nilai Penerapan Sosial)
+                coinsList.push(new Coin(150, 350, true, "SEDEKAH"));
+                coinsList.push(new Coin(900, 350, true, "ANAK YATIM"));
+                coinsList.push(new Coin(1600, 350, true, "KASIH SAYANG"));
+                coinsList.push(new Coin(2500, 350, true, "GOLONGAN KANAN"));
+
+                // Rintangan Musuh Tangguh
+                enemies.push(new Enemy(850, 370, 180, "INGKAR"));
+                enemies.push(new Enemy(1500, 370, 220, "SOMBOUNG"));
+                enemies.push(new Enemy(2250, 370, 300, "DUSTA"));
+
+                // Duri menghalangi jalur pendaratan
+                spikes.push(new Spike(350, 380));
+                spikes.push(new Spike(950, 380));
+                spikes.push(new Spike(1550, 380));
+                spikes.push(new Spike(2300, 380));
+
+                // Di Level 3, Checkpoint akan memicu kuis Gerbang Ilmu di akhir.
+                // Kita tambahkan checkpoint terakhir tepat sebelum Gate.
+                checkpoints.push(new Checkpoint(2600, 360, "FINAL_GATE"));
+            }
+
+            // Letakkan Gerbang Utama di paling akhir level
+            finalGoal = new GoalGate(2800, 280);
+        }
+
+        /* ==========================================
+           STREAMING_CHUNK: Mengatur Sistem Deteksi Tabrakan (Collisions)
+           ========================================== */
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+
+        function handleCollisions() {
+            // 1. Tabrakan Karakter dengan Platform (Dinding & Tanah)
+            player.isGrounded = false;
+            
+            for (let platform of platforms) {
+                // Periksa apakah ada tabrakan di sumbu Y (pendaratan)
+                if (player.x + player.width > platform.x &&
+                    player.x < platform.x + platform.width) {
+                    
+                    // Deteksi mendarat di atas platform
+                    if (player.y + player.height >= platform.y &&
+                        player.y + player.height - player.vy <= platform.y + 10 &&
+                        player.vy >= 0) {
+                        player.y = platform.y - player.height;
+                        player.vy = 0;
+                        player.isGrounded = true;
+                    }
+                }
+            }
+
+            // Jika terjatuh ke jurang maut
+            if (player.y > canvas.height) {
+                triggerDamage(true); // Langsung kena damage fatal/reset posisi
+            }
+
+            // 2. Tabrakan Koin Ilmu (Ambil Koin)
+            for (let coin of coinsList) {
+                if (!coin.collected && checkCollision(player, coin)) {
+                    coin.collected = true;
+                    coins++;
+                    score += 10;
+                    document.getElementById('hud-score').innerText = score;
+                    sound.playCoin();
+                }
+            }
+
+            // 3. Tabrakan Musuh (Mengurangi Nyawa)
+            for (let enemy of enemies) {
+                if (checkCollision(player, enemy)) {
+                    triggerDamage();
+                }
+            }
+
+            // 4. Tabrakan Duri Tajam (Mengurangi Nyawa)
+            for (let spike of spikes) {
+                if (checkCollision(player, spike)) {
+                    triggerDamage();
+                }
+            }
+
+            // 5. Tabrakan Checkpoint Kuis
+            for (let cp of checkpoints) {
+                if (!cp.activated && checkCollision(player, cp)) {
+                    cp.activated = true;
+                    triggerQuiz(cp);
+                }
+            }
+
+            // 6. Gerbang Akhir
+            if (checkCollision(player, finalGoal)) {
+                if (currentLevel < 3) {
+                    // Berpindah level ke berikutnya
+                    currentLevel++;
+                    // Selesaikan misi lencana
+                    unlockBadge(currentLevel - 1);
+                    loadLevel(currentLevel);
+                    sound.playVictory();
+                } else {
+                    // Tamat Game - Selesaikan misi Master
+                    unlockBadge(3);
+                    triggerVictory();
+                }
+            }
+        }
+
+        /* ==========================================
+           STREAMING_CHUNK: Mengaktifkan Sistem Pengurangan Nyawa (Damage)
+           ========================================== */
+        function triggerDamage(instantKill = false) {
+            if (player.invincibleTimer > 0 && !instantKill) return;
+
+            lives--;
+            updateLivesUI();
+            sound.playWrong();
+
+            if (lives <= 0) {
+                gameState = 'GAMEOVER';
+                document.getElementById('gameover-screen').classList.remove('hidden');
+            } else {
+                // Efek Kebal sementara setelah terkena serangan
+                player.invincibleTimer = 90; // Kebal selama 1.5 detik
+                
+                // Reposisi aman ke awal level terdekat
+                player.x = Math.max(100, player.x - 300);
+                player.y = 100;
+                player.vy = 0;
+            }
+        }
+
+        function updateLivesUI() {
+            let stars = '';
+            for (let i = 0; i < 3; i++) {
+                stars += (i < lives) ? '⭐' : '🖤';
+            }
+            document.getElementById('hud-lives').innerText = stars;
+        }
+
+        /* ==========================================
+           STREAMING_CHUNK: Mengatur Mekanisme Kuis & Jendela Interaktif (Quiz Modal)
+           ========================================== */
+        let activeQuizQuestions = [];
+        let currentQuizIndex = 0;
+        let finalGateMode = false;
+
+        function triggerQuiz(checkpoint) {
+            gameState = 'QUIZ';
+            activeCheckpoint = checkpoint;
+
+            const modal = document.getElementById('quiz-modal');
+            const card = document.getElementById('quiz-modal-card');
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                card.classList.remove('scale-95', 'opacity-0');
+            }, 50);
+
+            if (checkpoint.quizId === "FINAL_GATE") {
+                // Mode Gerbang Ilmu: 5 Kuis Acak Berturut-Turut untuk Menang!
+                finalGateMode = true;
+                activeQuizQuestions = selectRandomQuestions(5);
+                currentQuizIndex = 0;
+                presentQuestion(activeQuizQuestions[0]);
+            } else {
+                // Kuis Checkpoint Biasa (1 Soal)
+                finalGateMode = false;
+                const questionData = QUIZ_BANK.find(q => q.id === checkpoint.quizId);
+                presentQuestion(questionData);
+            }
+        }
+
+        // Memilih 5 Pertanyaan Acak dari Bank Soal
+        function selectRandomQuestions(count) {
+            const shuffled = [...QUIZ_BANK].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
+        }
+
+        function presentQuestion(qData) {
+            if (!qData) return;
+
+            const questionText = document.getElementById('quiz-question');
+            const optionsContainer = document.getElementById('quiz-options');
+
+            questionText.innerHTML = `<span class="text-emerald-400 font-bold">PERTANYAAN ${finalGateMode ? (currentQuizIndex + 1) + '/5' : ''}:</span><br>${qData.question}`;
+            optionsContainer.innerHTML = '';
+
+            qData.options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-700/60 p-3.5 rounded-xl text-sm transition font-medium flex items-center justify-between group";
+                btn.innerHTML = `
+                    <span>${opt.text}</span>
+                    <i class="fa-solid fa-chevron-right text-slate-500 group-hover:text-emerald-400 transition"></i>
+                `;
+                btn.onclick = () => submitAnswer(opt.correct, qData.explanation);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function submitAnswer(isCorrect, explanation) {
+            if (isCorrect) {
+                sound.playCorrect();
+                score += 100;
+                if (lives < 3) lives++; // Ekstra nyawa jika benar dan nyawa berkurang
+                updateLivesUI();
+                document.getElementById('hud-score').innerText = score;
+
+                if (finalGateMode) {
+                    currentQuizIndex++;
+                    if (currentQuizIndex < activeQuizQuestions.length) {
+                        // Lanjut ke soal final berikutnya
+                        presentQuestion(activeQuizQuestions[currentQuizIndex]);
+                    } else {
+                        // Lulus Semua 5 Soal Gerbang Ilmu!
+                        closeQuizModal();
+                        unlockBadge(3);
+                        triggerVictory();
+                    }
+                } else {
+                    // Checkpoint biasa selesai
+                    closeQuizModal();
+                    gameState = 'PLAYING';
+                }
+            } else {
+                // Jawaban salah: tampilkan penjelasan interaktif
+                sound.playWrong();
+                showFeedback(explanation);
+            }
+        }
+
+        function closeQuizModal() {
+            const modal = document.getElementById('quiz-modal');
+            const card = document.getElementById('quiz-modal-card');
+            card.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        function showFeedback(text) {
+            const modal = document.getElementById('feedback-modal');
+            document.getElementById('feedback-text').innerText = text;
+            modal.classList.remove('hidden');
+        }
+
+        document.getElementById('btn-close-feedback').onclick = () => {
+            document.getElementById('feedback-modal').classList.add('hidden');
+            closeQuizModal();
+            
+            // Lanjutkan game ( checkpoint tetap dianggap terlewati agar siswa tidak macet/frustrasi )
+            gameState = 'PLAYING';
+        };
+
+        /* ==========================================
+           STREAMING_CHUNK: Mengelola Penghargaan & Sertifikat Kelulusan
+           ========================================== */
+        function unlockBadge(levelId) {
+            let badgeBox, badgeTitle, badgeDesc, icon;
+            
+            if (levelId === 1) {
+                badgeBox = document.getElementById('badge-lvl1');
+                badgeTitle = document.getElementById('badge-title-lvl1');
+                badgeDesc = document.getElementById('badge-desc-lvl1');
+                icon = '<i class="fa-solid fa-medal text-lg text-emerald-400"></i>';
+                badgeDesc.innerText = "LULUS ✓";
+                badgeBox.classList.add('bg-emerald-900/30', 'border-emerald-500');
+            } else if (levelId === 2) {
+                badgeBox = document.getElementById('badge-lvl2');
+                badgeTitle = document.getElementById('badge-title-lvl2');
+                badgeDesc = document.getElementById('badge-desc-lvl2');
+                icon = '<i class="fa-solid fa-mountain text-lg text-amber-400"></i>';
+                badgeDesc.innerText = "LULUS ✓";
+                badgeBox.classList.add('bg-amber-900/30', 'border-amber-500');
+            } else if (levelId === 3) {
+                badgeBox = document.getElementById('badge-master');
+                badgeTitle = document.getElementById('badge-title-master');
+                badgeDesc = document.getElementById('badge-desc-master');
+                icon = '<i class="fa-solid fa-mosque text-lg text-yellow-400 animate-pulse"></i>';
+                badgeDesc.innerText = "SAHABAT AL-BALAD ✓";
+                badgeBox.classList.add('bg-yellow-900/30', 'border-yellow-500');
+            }
+
+            if (badgeBox) {
+                badgeBox.innerHTML = icon;
+            }
+        }
+
+        function triggerVictory() {
+            gameState = 'VICTORY';
+            sound.playVictory();
+
+            // Hitung Bonus Skor Akhir
+            const lifeBonus = lives * 150;
+            const finalCalculatedScore = score + lifeBonus;
+
+            // Render sertifikat modal
+            document.getElementById('final-score').innerText = finalCalculatedScore;
+            document.getElementById('final-coins').innerText = coins;
+            
+            const victoryModal = document.getElementById('victory-modal');
+            victoryModal.classList.remove('hidden');
+        }
+
+        // Salin Tautan Sertifikat
+        document.getElementById('btn-share-cert').onclick = () => {
+            const fakeUrl = `https://madrasah-game.edu/sahabat-al-balad/sertifikat?skor=${score}&koin=${coins}`;
+            const tempInput = document.createElement('input');
+            tempInput.value = `Alhamdulillah! Saya lulus Ujian Surah Al-Balad sebagai "Sahabat Al-Balad" dengan Skor Akhir ${score + (lives * 150)}! Cobalah gamenya sekarang!`;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            
+            // Modifikasi teks tombol sebagai tanda telah berhasil disalin
+            const btn = document.getElementById('btn-share-cert');
+            btn.innerHTML = `<i class="fa-solid fa-check"></i> Pesan & Prestasi Berhasil Disalin!`;
+            setTimeout(() => {
+                btn.innerHTML = `<i class="fa-solid fa-copy"></i> Salin Link Sertifikat`;
+            }, 2500);
+        };
+
+        /* ==========================================
+           STREAMING_CHUNK: Melukis Aset Latar Belakang (Background Parallax & Kota Makkah)
+           ========================================== */
+        function drawBackground() {
+            // Langit Gradien sesuai level (Siang -> Sore -> Senja)
+            let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            
+            if (currentLevel === 1) {
+                grad.addColorStop(0, '#0284c7'); // Biru langit cerah
+                grad.addColorStop(1, '#bae6fd');
+            } else if (currentLevel === 2) {
+                grad.addColorStop(0, '#7c2d12'); // Oranye/Sore gurun pasir
+                grad.addColorStop(1, '#ffedd5');
+            } else if (currentLevel === 3) {
+                grad.addColorStop(0, '#0f172a'); // Malam Islami bertabur bintang
+                grad.addColorStop(1, '#1e1b4b');
+            }
+            
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Level 3: Lukis Bintang di langit malam
+            if (currentLevel === 3) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                for (let i = 0; i < 20; i++) {
+                    const x = (i * 123) % canvas.width;
+                    const y = (i * 47) % 200;
+                    ctx.fillRect(x, y, 2, 2);
+                }
+            }
+
+            // Parallax Lapisan Belakang: Bukit-bukit pasir atau siluet kubah kota Makkah
+            ctx.save();
+            ctx.fillStyle = (currentLevel === 1) ? '#bae6fd' : (currentLevel === 2) ? '#fed7aa' : '#312e81';
+            ctx.globalAlpha = 0.45;
+            
+            // Gambar siluet perbukitan atau kubah masjid di belakang
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height);
+            for (let i = 0; i <= canvas.width; i += 100) {
+                // Guntingan gelombang sinus lembut
+                const heightOffset = Math.sin(i / 150 + cameraX / 400) * 40 + 80;
+                ctx.lineTo(i, canvas.height - heightOffset);
+            }
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            // Parallax Lapisan Tengah: Kubah & Menara Masjid
+            ctx.save();
+            ctx.fillStyle = (currentLevel === 1) ? '#38bdf8' : (currentLevel === 2) ? '#f59e0b' : '#1e1b4b';
+            ctx.globalAlpha = 0.25;
+            
+            // Menggambar kubah arsitektur Islam di latar
+            for (let i = 0; i < 3; i++) {
+                const posX = (i * 500) - (cameraX * 0.25) % 1500;
+                // Menara Masjid
+                ctx.fillRect(posX + 80, 150, 20, 250);
+                // Kubah Bawang Menara
+                ctx.beginPath();
+                ctx.arc(posX + 90, 150, 15, 0, Math.PI, true);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        /* ==========================================
+           STREAMING_CHUNK: Melakukan Perulangan Utama Game Loop & Rendering
+           ========================================== */
+        function gameLoop() {
+            if (gameState === 'PLAYING') {
+                // 1. Update Posisi Pemain
+                player.update();
+
+                // 2. Kamera mengikuti gerakan pemain (Center)
+                cameraX = player.x - canvas.width / 2 + player.width / 2;
+                // Batas geser kamera agar tidak ke luar batas level
+                if (cameraX < 0) cameraX = 0;
+                if (cameraX > virtualWidth - canvas.width) cameraX = virtualWidth - canvas.width;
+
+                // 3. Update Koin & Rintangan
+                coinsList.forEach(coin => coin.update());
+                enemies.forEach(enemy => enemy.update());
+
+                // 4. Deteksi Tabrakan
+                handleCollisions();
+            }
+
+            // 5. PEMBERSIHAN DAN RENDERING LAYER CANVAS
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Layer 1: Latar Belakang
+            drawBackground();
+
+            // Layer 2: Platform Tanah
+            platforms.forEach(platform => platform.draw());
+
+            // Layer 3: Koin, Checkpoint, Musuh & Rintangan
+            coinsList.forEach(coin => coin.draw());
+            spikes.forEach(spike => spike.draw());
+            checkpoints.forEach(cp => cp.draw());
+            finalGoal.draw();
+            enemies.forEach(enemy => enemy.draw());
+
+            // Layer 4: Karakter Utama
+            player.draw();
+
+            // Lanjutkan perulangan animasi
+            requestAnimationFrame(gameLoop);
+        }
+
+        /* ==========================================
+           STREAMING_CHUNK: Menyiapkan Event Listener Tombol Sentuh HP & Kontrol Utama
+           ========================================== */
+        // Handler Tombol UI Panduan
+        const pModal = document.getElementById('panduan-modal');
+        document.getElementById('btn-panduan').onclick = () => pModal.classList.remove('hidden');
+        document.getElementById('btn-close-panduan').onclick = () => pModal.classList.add('hidden');
+
+        // Toggle Suara
+        const audioBtn = document.getElementById('btn-audio-toggle');
+        const audioIcon = document.getElementById('audio-icon');
+        audioBtn.onclick = () => {
+            sound.enabled = !sound.enabled;
+            if (sound.enabled) {
+                audioIcon.className = "fa-solid fa-volume-high";
+                audioBtn.innerHTML = `<i class="fa-solid fa-volume-high" id="audio-icon"></i> <span class="hidden sm:inline">Suara: Aktif</span>`;
+            } else {
+                audioIcon.className = "fa-solid fa-volume-xmark text-red-400";
+                audioBtn.innerHTML = `<i class="fa-solid fa-volume-xmark text-red-400" id="audio-icon"></i> <span class="hidden sm:inline">Suara: Bisu</span>`;
+            }
+        };
+
+        // Mulai Game Pertama Kali
+        document.getElementById('btn-start-game').onclick = () => {
+            document.getElementById('start-screen').classList.add('hidden');
+            gameState = 'PLAYING';
+            score = 0;
+            coins = 0;
+            lives = 3;
+            document.getElementById('hud-score').innerText = "0";
+            updateLivesUI();
+            sound.init();
+            loadLevel(1);
+        };
+
+        // Reset Game Ulang (Game Over Screen)
+        document.getElementById('btn-restart-game').onclick = () => {
+            document.getElementById('gameover-screen').classList.add('hidden');
+            gameState = 'PLAYING';
+            score = 0;
+            coins = 0;
+            lives = 3;
+            document.getElementById('hud-score').innerText = "0";
+            updateLivesUI();
+            loadLevel(1);
+        };
+
+        // Mulai Kembali dari Sertifikat Kemenangan
+        document.getElementById('btn-play-again').onclick = () => {
+            document.getElementById('victory-modal').classList.add('hidden');
+            gameState = 'PLAYING';
+            score = 0;
+            coins = 0;
+            lives = 3;
+            document.getElementById('hud-score').innerText = "0";
+            updateLivesUI();
+            loadLevel(1);
+        };
+
+        /* ==========================================
+           STREAMING_CHUNK: Mengintegrasikan Tombol Layar Sentuh Mobile
+           ========================================== */
+        const leftBtn = document.getElementById('btn-ctrl-left');
+        const rightBtn = document.getElementById('btn-ctrl-right');
+        const jumpBtn = document.getElementById('btn-ctrl-jump');
+
+        // Touch Left
+        leftBtn.addEventListener('touchstart', (e) => { keys.left = true; e.preventDefault(); });
+        leftBtn.addEventListener('touchend', (e) => { keys.left = false; e.preventDefault(); });
+        leftBtn.addEventListener('mousedown', () => keys.left = true);
+        leftBtn.addEventListener('mouseup', () => keys.left = false);
+
+        // Touch Right
+        rightBtn.addEventListener('touchstart', (e) => { keys.right = true; e.preventDefault(); });
+        rightBtn.addEventListener('touchend', (e) => { keys.right = false; e.preventDefault(); });
+        rightBtn.addEventListener('mousedown', () => keys.right = true);
+        rightBtn.addEventListener('mouseup', () => keys.right = false);
+
+        // Touch Jump
+        jumpBtn.addEventListener('touchstart', (e) => { keys.space = true; e.preventDefault(); });
+        jumpBtn.addEventListener('touchend', (e) => { keys.space = false; e.preventDefault(); });
+        jumpBtn.addEventListener('mousedown', () => keys.space = true);
+        jumpBtn.addEventListener('mouseup', () => keys.space = false);
+
+        // Jaga agar canvas tetap rapi di resize layar
+        function resizeCanvas() {
+            // Menyesuaikan rasio aspek layar
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // Mulai Loop Utama Game pada pemuatan halaman
+        window.onload = function() {
+            loadLevel(1);
+            gameLoop();
+        };
+    </script>
+</body>
+</html>
